@@ -28,7 +28,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 60px 15px;
+            padding: 40px 15px;
             opacity: 0;
             transform: translateY(20px);
             transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
@@ -45,6 +45,16 @@
             max-width: 800px;
             width: 100%;
             box-shadow: 0 15px 50px rgba(74, 63, 53, 0.06);
+        }
+        /* 響應式字體優化 */
+        @media (max-width: 640px) {
+            .story-text {
+                font-size: 1.15rem !important;
+                line-height: 1.8;
+            }
+            .card-content {
+                padding: 1.25rem;
+            }
         }
         .photo-container {
             position: relative;
@@ -73,7 +83,7 @@
         .caption-box {
             position: absolute; bottom: 0; left: 0; right: 0;
             background: var(--caption-bg); color: white; padding: 15px;
-            font-size: 0.9rem; text-align: center;
+            font-size: 1rem; text-align: center;
             backdrop-filter: blur(6px); transition: opacity 0.4s ease;
         }
         .caption-hidden { opacity: 0; pointer-events: none; }
@@ -92,12 +102,12 @@
         .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
         
         .story-text {
-            font-size: 1rem; line-height: 1.85; letter-spacing: 0.04em; color: #3d342d;
+            font-size: 1.1rem; line-height: 1.9; letter-spacing: 0.04em; color: #3d342d;
             padding: 0 5px;
         }
 
         .footer-stage {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 80px; 
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 100px; 
             z-index: 100; pointer-events: none;
             background: linear-gradient(to top, rgba(253, 250, 247, 0.95), rgba(253, 250, 247, 0));
         }
@@ -114,16 +124,29 @@
         }
         #final-text {
             color: #d1c7bc; text-align: center; line-height: 2.8;
-            letter-spacing: 0.15em; padding: 30px; font-weight: 300; font-size: 1.1rem;
+            letter-spacing: 0.15em; padding: 30px; font-weight: 300; font-size: 1.25rem;
+        }
+
+        .heart {
+            position: absolute;
+            fill: #ff8a8a;
+            opacity: 0;
+            transform: translateY(0) scale(0.5);
+            animation: floatHeart 2s ease-out forwards;
+        }
+        @keyframes floatHeart {
+            0% { opacity: 0; transform: translateY(0) scale(0.5); }
+            20% { opacity: 0.8; }
+            100% { opacity: 0; transform: translateY(-40px) scale(1.2); }
         }
     </style>
 </head>
 <body>
 
     <div id="intro-overlay" class="fixed inset-0 z-[5000] flex flex-col items-center justify-center transition-opacity duration-1000 bg-white">
-        <h1 class="text-4xl font-light tracking-[0.5em] mb-6 text-stone-700">致 魚魚</h1>
-        <p class="text-sm text-stone-400 tracking-[0.3em] mb-12">一段關於我們與時間的旅程</p>
-        <button id="start-btn" onclick="startApp()" class="px-14 py-4 border border-stone-300 rounded-full text-xs tracking-[0.4em] hover:bg-stone-50 transition-all duration-300 shadow-sm">開啟回憶</button>
+        <h1 class="text-3xl md:text-5xl font-light tracking-[0.5em] mb-6 text-stone-700">致 魚魚</h1>
+        <p class="text-xs md:text-sm text-stone-400 tracking-[0.3em] mb-12">一段關於我們與時間的旅程</p>
+        <button id="start-btn" onclick="startApp()" class="px-12 py-4 border border-stone-300 rounded-full text-xs tracking-[0.4em] hover:bg-stone-50 transition-all duration-300 shadow-sm">開啟回憶</button>
     </div>
 
     <div id="player" class="hidden"></div>
@@ -131,6 +154,7 @@
     
     <div class="footer-stage">
         <svg id="canvas" viewBox="0 0 1000 100" preserveAspectRatio="none"></svg>
+        <div id="heart-container" style="position:absolute; inset:0;"></div>
     </div>
 
     <div id="final-overlay"><div id="final-text"></div></div>
@@ -151,7 +175,7 @@
                     {url: "https://i.postimg.cc/jDLh3ZTJ/4.jpg", note: "魚第一次公主抱我！真的很意外抱的起來～我超級開心！"},
                     {url: "https://i.postimg.cc/RWNTpXmf/5.jpg", note: "美顏美的好可愛～"},
                     {url: "https://i.postimg.cc/SJZrGHw5/6.jpg", note: "帶著舊安全帽的魚 好帥！ 好喜歡這個笑靨！"},
-                    {url: "https://i.postimg.cc/zy6FsKDk/7.jpg", note: "魚笑得超開心 我很幸福的躺在魚的床上 享受魚的笑顏"}
+                    {url: "https://i.postimg.cc/zy6FsKDk/7.jpg", note: "魚笑得超開心 我很幸福的躺在魚의 床上 享受魚的笑顏"}
                 ],
                 text: "雖然我記憶力很差，但你帶給我的快樂，會永遠留在我心底。"
             },
@@ -385,6 +409,18 @@
             requestAnimationFrame(loop);
         }
 
+        function createHeart(x) {
+            const container = document.getElementById('heart-container');
+            const heart = document.createElement('div');
+            heart.className = 'heart';
+            heart.style.left = x + 'px';
+            heart.style.bottom = '80px';
+            heart.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+            container.appendChild(heart);
+            setTimeout(() => heart.remove(), 2000);
+        }
+
+        let lastHeartTime = 0;
         function drawAnimation(p) {
             const svg = document.getElementById('canvas');
             svg.innerHTML = '';
@@ -398,21 +434,29 @@
             const groundY = 98;
             const centerX = p * 1000; 
             let bX, gX, bState, gState, bO=1, gO=1;
+            let heartMode = false;
 
             if (p < 0.05) { bX = centerX + 15; gO = 0; bState = 'walk'; } 
             else if (p < 0.15) { gO = (p-0.05)/0.1; bX = centerX+10; gX = centerX-20+(5*gO); bState = 'walk'; gState = 'walk'; }
-            else if (p < 0.3) { bX = centerX+8; gX = centerX-8; bState = 'hand'; gState = 'hand'; }
-            else if (p < 0.45) { bX = centerX+3; gX = centerX-3; bState = 'hug'; gState = 'hug'; }
-            else if (p < 0.55) { bX = centerX+1.5; gX = centerX-1.5; bState = 'kiss'; gState = 'kiss'; }
-            else if (p < 0.75) { bX = centerX-15; gX = centerX+12; bState = 'comb'; gState = 'sit-right'; 
+            else if (p < 0.3) { bX = centerX+8; gX = centerX-8; bState = 'hand'; gState = 'hand'; heartMode = true; }
+            else if (p < 0.45) { bX = centerX+3; gX = centerX-3; bState = 'hug'; gState = 'hug'; heartMode = true; }
+            else if (p < 0.55) { bX = centerX+1.5; gX = centerX-1.5; bState = 'kiss'; gState = 'kiss'; heartMode = true; }
+            else if (p < 0.75) { bX = centerX-15; gX = centerX+12; bState = 'comb'; gState = 'sit-right'; heartMode = true;
                 const chair = document.createElementNS("http://www.w3.org/2000/svg","path");
                 chair.setAttribute("d",`M${gX-7} ${groundY} V${groundY-14} H${gX+7} V${groundY}`);
                 chair.setAttribute("stroke","#d8ccc0"); chair.setAttribute("fill","none"); svg.appendChild(chair);
             }
-            else if (p < 0.88) { bX = centerX+3; gX = centerX-3; bState = 'hug'; gState = 'hug'; }
+            else if (p < 0.88) { bX = centerX+3; gX = centerX-3; bState = 'hug'; gState = 'hug'; heartMode = true; }
             else if (p < 0.94) { let sep = (p-0.88)/0.06; bX = centerX-10; gX = centerX+15+sep*60; gO = 1-sep; bState = 'walk'; gState = 'walk'; }
             else if (p < 0.98) { bX = centerX; gO = 0; bState = 'stand'; }
             else { bX = centerX - 10; gO = 0; bState = 'crouch'; }
+
+            const now = Date.now();
+            if (heartMode && now - lastHeartTime > 600) {
+                const screenX = (centerX / 1000) * window.innerWidth;
+                createHeart(screenX + (Math.random() * 20 - 10));
+                lastHeartTime = now;
+            }
 
             drawPerson(svg, bX, groundY, 'boy', bState, bO, t);
             if(gO > 0) drawPerson(svg, gX, groundY, 'girl', gState, gO, t);
@@ -422,20 +466,18 @@
             const g = document.createElementNS("http://www.w3.org/2000/svg","g");
             g.setAttribute("opacity", opacity);
             const color = type === 'boy' ? '#5e7c8d' : '#c48b9f';
-            const s = 1.2; // 整體縮放倍率
-            const wS = 0.7; // 寬度縮減 30% (乘以 0.7)
+            const s = 0.96; 
+            const wS = 0.56; 
             
             g.setAttribute("stroke", color); g.setAttribute("stroke-width", 2.2); g.setAttribute("fill","none"); g.setAttribute("stroke-linecap","round");
             
             const walk = (state === 'walk' || state === 'hand') ? Math.sin(t * 2.5) * (6 * wS) : 0;
             
-            // 高度比例固定
             let headY = -48 * s;
             let bodyT = -42 * s;
             let bodyB = -22 * s;
             let armJointY = -38 * s;
             
-            // 寬度變數皆套用 wS
             let legL = `M0 ${bodyB} L${(-6-walk) * wS} 0`;
             let legR = `M0 ${bodyB} L${(6+walk) * wS} 0`;
             let armL = `M0 ${armJointY} L${(-10-walk) * wS} ${bodyB+5}`;
