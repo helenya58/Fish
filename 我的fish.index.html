@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>致魚魚 - 完美回憶錄</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #fdfaf7;
+            --text-color: #4a3f35;
+            --accent-color: #a68d7a;
+            --card-bg: rgba(255, 255, 255, 0.98);
+            --caption-bg: rgba(0, 0, 0, 0.7);
+            --stage-bg: rgba(245, 240, 230, 0.7); 
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Noto Sans TC', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .section-block {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 15px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .section-block.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .card-content {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            padding: 1.5rem;
+            border-radius: 24px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 15px 50px rgba(74, 63, 53, 0.06);
+        }
+        .photo-container {
+            position: relative;
+            touch-action: pan-y;
+        }
+        .photo-frame {
+            position: relative;
+            width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            background: #f0f0f0;
+            aspect-ratio: 4 / 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .photo-frame img {
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        .caption-box {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: var(--caption-bg); color: white; padding: 15px;
+            font-size: 0.9rem; text-align: center;
+            backdrop-filter: blur(6px); transition: opacity 0.4s ease;
+        }
+        .caption-hidden { opacity: 0; pointer-events: none; }
+        
+        .thumb-nav {
+            display: flex; gap: 12px; overflow-x: auto;
+            padding: 5px 0 15px 0; scrollbar-width: none; margin-bottom: 15px;
+        }
+        .thumb-nav::-webkit-scrollbar { display: none; }
+        .thumb-item {
+            width: 64px; height: 64px; flex-shrink: 0;
+            border-radius: 10px; overflow: hidden; opacity: 0.35;
+            border: 2.5px solid transparent; cursor: pointer; transition: all 0.3s ease;
+        }
+        .thumb-item.active { opacity: 1; border-color: var(--accent-color); transform: translateY(-2px); }
+        .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .story-text {
+            font-size: 1rem; line-height: 1.85; letter-spacing: 0.04em; color: #3d342d;
+            padding: 0 5px;
+        }
+
+        .footer-stage {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 80px; 
+            z-index: 100; pointer-events: none;
+            background: linear-gradient(to top, rgba(253, 250, 247, 0.95), rgba(253, 250, 247, 0));
+        }
+        #canvas {
+            width: 100%; height: 100%; position: absolute; bottom: 0; left: 0;
+            overflow: visible; 
+        }
+
+        #final-overlay {
+            position: fixed; inset: 0; background: #1a1a1a;
+            z-index: 2000; opacity: 0; display: flex;
+            align-items: center; justify-content: center;
+            transition: opacity 3s ease; pointer-events: none;
+        }
+        #final-text {
+            color: #d1c7bc; text-align: center; line-height: 2.8;
+            letter-spacing: 0.15em; padding: 30px; font-weight: 300; font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="intro-overlay" class="fixed inset-0 z-[5000] flex flex-col items-center justify-center transition-opacity duration-1000 bg-white">
+        <h1 class="text-4xl font-light tracking-[0.5em] mb-6 text-stone-700">致 魚魚</h1>
+        <p class="text-sm text-stone-400 tracking-[0.3em] mb-12">一段關於我們與時間的旅程</p>
+        <button id="start-btn" onclick="startApp()" class="px-14 py-4 border border-stone-300 rounded-full text-xs tracking-[0.4em] hover:bg-stone-50 transition-all duration-300 shadow-sm">開啟回憶</button>
+    </div>
+
+    <div id="player" class="hidden"></div>
+    <div class="story-container" id="content-area"></div>
+    
+    <div class="footer-stage">
+        <svg id="canvas" viewBox="0 0 1000 100" preserveAspectRatio="none"></svg>
+    </div>
+
+    <div id="final-overlay"><div id="final-text"></div></div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        const storyData = [
+            {
+                tag: 'intro',
+                text: "嗨魚魚 不知道你在打開這個網站的這刻是否還愛著我，也不知道我在分手前夕做這些是否會顯得很可笑，不過，至少在我做的這段時間，我是開心的，開心原來在以前 我們有過那麼多快樂的時光..."
+            },
+            {
+                tag: 'part1',
+                photos: [
+                    {url: "https://i.postimg.cc/TKFJzg2j/1.jpg", note: "超棒的牛排 跟我超愛的酥皮濃湯！"},
+                    {url: "https://i.postimg.cc/zyVk20ND/2.jpg", note: "我們去情侶聖地 體驗了一次大眾的愛情"},
+                    {url: "https://i.postimg.cc/ZW2xGpYp/3.jpg", note: "魚又故意裝作好嫌棄我的樣子！幼稚！"},
+                    {url: "https://i.postimg.cc/jDLh3ZTJ/4.jpg", note: "魚第一次公主抱我！真的很意外抱的起來～我超級開心！"},
+                    {url: "https://i.postimg.cc/RWNTpXmf/5.jpg", note: "美顏美的好可愛～"},
+                    {url: "https://i.postimg.cc/SJZrGHw5/6.jpg", note: "帶著舊安全帽的魚 好帥！ 好喜歡這個笑靨！"},
+                    {url: "https://i.postimg.cc/zy6FsKDk/7.jpg", note: "魚笑得超開心 我很幸福的躺在魚的床上 享受魚的笑顏"}
+                ],
+                text: "雖然我記憶力很差，但你帶給我的快樂，會永遠留在我心底。"
+            },
+            {
+                tag: 'part2',
+                photos: [
+                    {url: "https://i.postimg.cc/dDKcMN52/8.jpg", note: "魚拍我宜蘭的家的夜景 好開心～覺得有被重視"},
+                    {url: "https://i.postimg.cc/dDmPJRf7/9.jpg", note: "魚帶我吃火鍋～雖然那時候的我還沒愛上火鍋XD"},
+                    {url: "https://i.postimg.cc/V5BQz9hJ/10.jpg", note: "魚來我學校參觀～我把魚的肚子拍的好大 嘿嘿～"},
+                    {url: "https://i.postimg.cc/YjfKtNPh/11.jpg", note: "沙灘車合照～真的好好玩"},
+                    {url: "https://i.postimg.cc/6TLJBVPv/12.jpg", note: "超美的沙灘車合照～"},
+                    {url: "https://i.postimg.cc/CdHTwC2D/13.jpg", note: "天空之鏡～但我大腿好粗..."}
+                ],
+                text: "這是你剛來宜蘭的時候，我很開心，也覺得很幸運，第一個人是你，你很溫柔\n後來你帶裝去體驗了沙灘車，我還記得你載著我瘋狂甩尾飆車，結果被工作人員罵的情景XD，雖然被罵讓我心很慌，但有你在我身前檔著，我覺得很幸福，這是身為籠中鳥的我第一次有的驚奇體驗。"
+            },
+            {
+                tag: 'part3',
+                photos: [{url: "https://i.postimg.cc/Tpdr5mx4/14.jpg", note: "第一次開車"}],
+                text: "後來你也帶著我開車，雖然我到現在還是不敢一個人上路www但我還是可以很自豪的說，我開過車！（雖然這講出去別人可能會笑死哈哈哈哈~"
+            },
+            {
+                tag: 'part4',
+                photos: [
+                    {url: "https://i.postimg.cc/bZSmwpvC/15.jpg", note: "很美的房間，但我忘記是哪裡了:3"},
+                    {url: "https://i.postimg.cc/KRH9bRmd/16.jpg", note: "很像職場下班後的放鬆，魚好帥"},
+                    {url: "https://i.postimg.cc/k2RTgq5k/17.jpg", note: "“Sam的家” 真的很美"}
+                ],
+                text: "你也帶我體驗了好多，我以前一直在幻想著想要體驗看看的房間！雖然很可惜的是，還是有幾間沒去到，但至少 已經體驗過超美的幾間了！尤其是太平山那天，雖然我很想泡溫，但還好因為聖誕節，湯房都滿了，我們才能在最後體驗一起到這麼棒的房間！"
+            },
+            {
+                tag: 'part5',
+                photos: [
+                    {url: "https://i.postimg.cc/SjtL23Hh/18.jpg", note: "我抱貓咪～米妮真的好可愛"},
+                    {url: "https://i.postimg.cc/Z0DPB2X4/19.jpg", note: "睡得好安詳呢，我很想見見長大後的她呢"},
+                    {url: "https://i.postimg.cc/F1nbd8wm/20.jpg", note: "沙灘車二次體驗～也很開心～"},
+                    {url: "https://i.postimg.cc/s10PQqbC/21.jpg", note: "我很喜歡的其中一張照片，好幸福的感覺"},
+                    {url: "https://i.postimg.cc/ThHjLFBw/22.jpg", note: "超好吃的生魚片！人生第一次吃到這麼好吃的"},
+                    {url: "https://i.postimg.cc/23XdbMg8/23.jpg", note: "好多標本 超酷！而且這是我們僅有的一張背影合照～喜歡～"},
+                    {url: "https://i.postimg.cc/jCk6wmBS/24.jpg", note: "成為畫中人！"},
+                    {url: "https://i.postimg.cc/4nFv7qjm/25.jpg", note: "海邊風好大～"},
+                    {url: "https://i.postimg.cc/Cd6CBX9Z/26.jpg", note: "咦～開心"},
+                    {url: "https://i.postimg.cc/w3b5yZn1/27.jpg", note: "眺望遠方～"},
+                    {url: "https://i.postimg.cc/mh63zJKz/28.jpg", note: "釣到不能吃的魚了！雖然我好想吃吃看這種顏色的"},
+                    {url: "https://i.postimg.cc/MvM7yt8T/29.jpg", note: "現釣的山泉水魚真的超鮮美！"},
+                    {url: "https://i.postimg.cc/pphfDktd/30.jpg", note: "吃到停不下來 魚不知道在幹麻"},
+                    {url: "https://i.postimg.cc/nMwKjgNn/31.jpg", note: "好克難坐在高鐵地板上的我～"},
+                    {url: "https://i.postimg.cc/JGDNbKWs/32.jpg", note: "魚也很克難的坐地板"}
+                ],
+                text: "時間不知不覺就到了2025新年，雖然是撿漏的，但我還是難掩跟你還有叔叔阿姨一同出遊的興奮，雖然我最喜歡的還是跟你單獨相處，但你願意帶我跟身邊的人多熟悉讓我很感動，不過，其實，從那之後我就知道，我們終有現在這一天的，當你叔叔問說，有沒有要結婚，你很大聲、篤定的說“沒有！“雖然你後來有解釋只是一時情急，但我知道，這是你潛意識的想法（至少我之前修心理學的課是這樣講的），所以我其實很早就沒有期待哈哈哈哈，只是偶爾還是會忍不住抱著少女心的幻想。雖說如此，那天我還是過得很開心，開啟了我對釣魚的興趣！本來很想跟你去夜釣小卷或其他魚的，不過世事難料，未來有緣再說～"
+            },
+            {
+                tag: 'part6',
+                photos: [
+                    {url: "https://i.postimg.cc/YhWF491R/33.jpg", note: "我最喜歡的其中一張照片，很正式的拍了一張，我很幸福"},
+                    {url: "https://i.postimg.cc/vcVn1BWS/34.jpg", note: "美美的櫻花 搭配美美的我"},
+                    {url: "https://i.postimg.cc/F7LSfRjW/35.jpg", note: "美美的風景 天氣真的很好"},
+                    {url: "https://i.postimg.cc/D8XGWZqB/36.jpg", note: "好颯 但紫色襯衫露出來了..."},
+                    {url: "https://i.postimg.cc/N5HXyM1V/37.jpg", note: "開心 我很爽朗地將手臂靠在魚的肩膀"},
+                    {url: "https://i.postimg.cc/2VZWq64P/38.jpg", note: "想親親但不敢親 嘿嘿"},
+                    {url: "https://i.postimg.cc/KRMTKznC/39.jpg", note: "好耀眼的魚"},
+                    {url: "https://i.postimg.cc/hXRdVBr2/40.jpg", note: "也是我愛的照片～我在相框裡～"},
+                    {url: "https://i.postimg.cc/BjfK20gk/41.jpg", note: "粉色櫻花 配我粉色眼影 但魚臭臉:("}
+                ],
+                text: "時間回到過年出遊那幾天，我最開心的還有清境農場了，不過理由滿膚淺的，因為我覺得 在那裡拍的照片我們兩個都很好看哈哈哈～"
+            },
+            {
+                tag: 'part7',
+                photos: [
+                    {url: "https://i.postimg.cc/9Ry3RyQh/42.jpg", note: "魚吃酥皮南瓜濃湯，我也吃了一口，我愛酥皮～"},
+                    {url: "https://i.postimg.cc/xJLrJLTW/43.jpg", note: "我喜歡的拉花還有合照～"},
+                    {url: "https://i.postimg.cc/LYjdYj88/44.jpg", note: "騎馬的魚 超級帥"}
+                ],
+                text: "接下來 是你的生日，應你要求 我帶你去吃了王品，最後還得到了一張我們的合照～雖然我覺得拍得不好看 :3，但我喜歡他的相匡，還有氛圍，整體而言很棒！\n\n再接下來，是我的生日，阪前鐵板燒，這是我第一次體驗這種高級的廚藝表演，雖然最後還是很開心，因為我們聊了很多，而且那天很親密，我很喜歡跟你聊天 還有肢體接觸>3<"
+            },
+            {
+                tag: 'part8',
+                photos: [{url: "https://i.postimg.cc/R3HfxL1X/45.jpg", note: "我哭到眼睛紅紅的還腫起來了，但被拍我其實是開心的:3"}],
+                text: "最後 這是我們互相講出來自己內心深處所想的那一天，我哭得好慘哈哈哈哈。成年人的世界，只篩選不教育。我其實一直在想，如果我沒有選擇活在當下 只體驗快樂，可能情況就會不一樣了吧。"
+            },
+            {
+                tag: 'part9',
+                photos: [
+                    {url: "https://i.postimg.cc/rDbF5CMW/46.jpg", note: "魚主動想拍我跟貓貓還有魚的狗狗跟魚合照 我興奮 驚喜"},
+                    {url: "https://i.postimg.cc/68S5CLtr/47.jpg", note: "也是跟魚魚 貓貓 狗狗合照～魚笑得更開心了～"},
+                    {url: "https://i.postimg.cc/HrKsb4d9/48.jpg", note: "魚帶我去看下雪聖誕樹～圓了我半個夢～"},
+                    {url: "https://i.postimg.cc/PLwfyp5W/49.jpg", note: "我想抱抱魚～"},
+                    {url: "https://i.postimg.cc/nsDV2jhG/50.jpg", note: "我抱到魚了～耶～～"},
+                    {url: "https://i.postimg.cc/HJyWzckR/51.jpg", note: "五寮尖登頂成功～"},
+                    {url: "https://i.postimg.cc/06w5nMNR/53.jpg", note: "鏡頭保護貼黏在眼皮上，愛有黏性的東西"},
+                    {url: "https://i.postimg.cc/r02VPVd6/55.jpg", note: "抱抱～我愛的貼貼"},
+                    {url: "https://i.postimg.cc/wyYqGqtj/57.jpg", note: "魚愛的多拉a夢"},
+                    {url: "https://i.postimg.cc/sQPjFkSg/58.jpg", note: "漁人碼頭煙火秀"},
+                    {url: "https://i.postimg.cc/ft7z4GXV/60.jpg", note: "雙人電輔自行車～魚好厲害"},
+                    {url: "https://i.postimg.cc/d7yQ6k0Y/61.jpg", note: "超美咖啡廳～"}
+                ],
+                text: "總之 我就以我喜歡的、對我來說很有意義的照片來做結尾吧！"
+            },
+            {
+                tag: 'fade',
+                text: "最後，我想跟你說，你曾是我的全世界，謝謝你出現在我的生命中，教會了我什麼是愛。"
+            },
+            {
+                tag: 'part10',
+                photos: [
+                    {url: "https://i.postimg.cc/JycsW6f8/63.jpg", note: "山中仙境～"},
+                    {url: "https://i.postimg.cc/HJ4rCZqg/64.jpg", note: "可惜沒有去..."},
+                    {url: "https://i.postimg.cc/4KbYTLDT/65.jpg", note: "有一點點點的太陽～"},
+                    {url: "https://i.postimg.cc/2LjvJRyd/66.jpg", note: "一開始停車等日出的地方～"},
+                    {url: "https://i.postimg.cc/mzyC82Lp/67.jpg", note: "魚開車辛苦了～戳魚鼻孔 嘿嘿"},
+                    {url: "https://i.postimg.cc/FkFcq5zj/68.jpg", note: "魚開車辛苦了～我陪你一起睡"},
+                    {url: "https://i.postimg.cc/G8v2L80B/69.jpg", note: "我愛親親 但魚好討厭 一直擺出這個表情"},
+                    {url: "https://i.postimg.cc/2bn6kbp8/70.jpg", note: "雨中漫步～好浪漫"},
+                    {url: "https://i.postimg.cc/Y450BNP9/71.jpg", note: "我在人間仙境～"},
+                    {url: "https://i.postimg.cc/Ny3Fv8ng/72.jpg", note: "我們好厲害 打到很多彩票～"},
+                    {url: "https://i.postimg.cc/jWp2Y61q/73.jpg", note: "最後一次一起租車的合照"}
+                ],
+                text: "最後，謝謝你最後給我一星期的溫柔。太平山之旅雖然有遺憾，但這份不完美，可能就是留著給下一個人圓滿的吧。"
+            }
+        ];
+
+        let currentPhotoIndices = {};
+
+        function renderStory() {
+            const container = document.getElementById('content-area');
+            storyData.forEach((sec, i) => {
+                currentPhotoIndices[i] = 0;
+                const div = document.createElement('div');
+                div.className = 'section-block';
+                div.id = `sec-${i}`;
+                
+                const card = document.createElement('div');
+                card.className = 'card-content';
+                
+                if (sec.photos) {
+                    const photoContainer = document.createElement('div');
+                    photoContainer.className = 'photo-container';
+                    const frame = document.createElement('div');
+                    frame.className = 'photo-frame';
+                    const img = document.createElement('img');
+                    img.src = sec.photos[0].url;
+                    img.id = `img-${i}`;
+                    const cap = document.createElement('div');
+                    cap.className = 'caption-box';
+                    cap.id = `cap-${i}`;
+                    cap.textContent = sec.photos[0].note;
+                    frame.onclick = () => cap.classList.toggle('caption-hidden');
+                    frame.appendChild(img); frame.appendChild(cap);
+                    photoContainer.appendChild(frame);
+
+                    let touchStartX = 0;
+                    frame.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX, {passive: true});
+                    frame.addEventListener('touchend', e => {
+                        const diff = touchStartX - e.changedTouches[0].clientX;
+                        if (Math.abs(diff) > 50) { if (diff > 0) nextPhoto(i); else prevPhoto(i); }
+                    }, {passive: true});
+
+                    if (sec.photos.length > 1) {
+                        const nav = document.createElement('div');
+                        nav.className = 'thumb-nav';
+                        sec.photos.forEach((p, pi) => {
+                            const t = document.createElement('div');
+                            t.className = `thumb-item ${pi===0?'active':''}`;
+                            t.id = `thumb-${i}-${pi}`;
+                            t.onclick = (e) => { e.stopPropagation(); updatePhoto(i, pi); };
+                            t.innerHTML = `<img src="${p.url}" loading="lazy">`;
+                            nav.appendChild(t);
+                        });
+                        photoContainer.appendChild(nav);
+                    }
+                    card.appendChild(photoContainer);
+                }
+                const text = document.createElement('div');
+                text.className = 'story-text whitespace-pre-wrap';
+                text.textContent = sec.text;
+                card.appendChild(text);
+                div.appendChild(card);
+                container.appendChild(div);
+            });
+            document.getElementById('final-text').innerHTML = "最後的最後，真的最後，雖然我現在還是很痛，但<br>我希望你可以找到你的真愛，找到一個你認定要跟她過後半餘生的人，幸福快樂。";
+        }
+
+        function updatePhoto(sIdx, pIdx) {
+            const sec = storyData[sIdx];
+            if (!sec.photos) return;
+            const targetIdx = (pIdx + sec.photos.length) % sec.photos.length;
+            currentPhotoIndices[sIdx] = targetIdx;
+            const imgEl = document.getElementById(`img-${sIdx}`);
+            const capEl = document.getElementById(`cap-${sIdx}`);
+            imgEl.style.opacity = '0';
+            setTimeout(() => {
+                imgEl.src = sec.photos[targetIdx].url;
+                capEl.textContent = sec.photos[targetIdx].note;
+                imgEl.style.opacity = '1';
+            }, 200);
+            document.querySelectorAll(`#sec-${sIdx} .thumb-item`).forEach((it, i) => it.classList.toggle('active', i === targetIdx));
+            const activeThumb = document.getElementById(`thumb-${sIdx}-${targetIdx}`);
+            if(activeThumb) activeThumb.parentElement.scrollTo({left: activeThumb.offsetLeft - 20, behavior: 'smooth'});
+        }
+
+        function nextPhoto(sIdx) { updatePhoto(sIdx, currentPhotoIndices[sIdx] + 1); }
+        function prevPhoto(sIdx) { updatePhoto(sIdx, currentPhotoIndices[sIdx] - 1); }
+
+        let player;
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '0', width: '0', videoId: 'p-fVzD-9f8o',
+                playerVars: { 'autoplay': 0, 'controls': 0, 'loop': 1, 'playlist': 'p-fVzD-9f8o' }
+            });
+        }
+
+        function startApp() {
+            document.getElementById('intro-overlay').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('intro-overlay').style.display = 'none';
+                if(player && player.playVideo) player.playVideo();
+                requestAnimationFrame(loop);
+            }, 1000);
+        }
+
+        function loop() {
+            const scroll = window.pageYOffset;
+            const max = document.documentElement.scrollHeight - window.innerHeight;
+            const p = Math.min(Math.max(scroll / (max || 1), 0), 1);
+            document.querySelectorAll('.section-block').forEach(s => {
+                if(s.getBoundingClientRect().top < window.innerHeight*0.85) s.classList.add('active');
+            });
+            const final = document.getElementById('final-overlay');
+            if(p > 0.992) { final.style.opacity = 1; final.style.pointerEvents = 'auto'; }
+            else { final.style.opacity = 0; final.style.pointerEvents = 'none'; }
+            drawAnimation(p);
+            requestAnimationFrame(loop);
+        }
+
+        function drawAnimation(p) {
+            const svg = document.getElementById('canvas');
+            svg.innerHTML = '';
+            const road = document.createElementNS("http://www.w3.org/2000/svg","line");
+            road.setAttribute("x1", "0"); road.setAttribute("y1", "98");
+            road.setAttribute("x2", "1000"); road.setAttribute("y2", "98");
+            road.setAttribute("stroke", "#d8ccc0"); road.setAttribute("stroke-width", "1.5");
+            svg.appendChild(road);
+
+            const t = Date.now() * 0.004;
+            const groundY = 98;
+            const centerX = p * 1000; 
+            let bX, gX, bState, gState, bO=1, gO=1;
+
+            if (p < 0.05) { bX = centerX + 15; gO = 0; bState = 'walk'; } 
+            else if (p < 0.15) { gO = (p-0.05)/0.1; bX = centerX+10; gX = centerX-20+(5*gO); bState = 'walk'; gState = 'walk'; }
+            else if (p < 0.3) { bX = centerX+8; gX = centerX-8; bState = 'hand'; gState = 'hand'; }
+            else if (p < 0.45) { bX = centerX+3; gX = centerX-3; bState = 'hug'; gState = 'hug'; }
+            else if (p < 0.55) { bX = centerX+1.5; gX = centerX-1.5; bState = 'kiss'; gState = 'kiss'; }
+            else if (p < 0.75) { bX = centerX-15; gX = centerX+12; bState = 'comb'; gState = 'sit-right'; 
+                const chair = document.createElementNS("http://www.w3.org/2000/svg","path");
+                chair.setAttribute("d",`M${gX-7} ${groundY} V${groundY-14} H${gX+7} V${groundY}`);
+                chair.setAttribute("stroke","#d8ccc0"); chair.setAttribute("fill","none"); svg.appendChild(chair);
+            }
+            else if (p < 0.88) { bX = centerX+3; gX = centerX-3; bState = 'hug'; gState = 'hug'; }
+            else if (p < 0.94) { let sep = (p-0.88)/0.06; bX = centerX-10; gX = centerX+15+sep*60; gO = 1-sep; bState = 'walk'; gState = 'walk'; }
+            else if (p < 0.98) { bX = centerX; gO = 0; bState = 'stand'; }
+            else { bX = centerX - 10; gO = 0; bState = 'crouch'; }
+
+            drawPerson(svg, bX, groundY, 'boy', bState, bO, t);
+            if(gO > 0) drawPerson(svg, gX, groundY, 'girl', gState, gO, t);
+        }
+
+        function drawPerson(svg, x, y, type, state, opacity, t) {
+            const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+            g.setAttribute("opacity", opacity);
+            const color = type === 'boy' ? '#5e7c8d' : '#c48b9f';
+            const s = 1.2; // 整體縮放倍率
+            const wS = 0.7; // 寬度縮減 30% (乘以 0.7)
+            
+            g.setAttribute("stroke", color); g.setAttribute("stroke-width", 2.2); g.setAttribute("fill","none"); g.setAttribute("stroke-linecap","round");
+            
+            const walk = (state === 'walk' || state === 'hand') ? Math.sin(t * 2.5) * (6 * wS) : 0;
+            
+            // 高度比例固定
+            let headY = -48 * s;
+            let bodyT = -42 * s;
+            let bodyB = -22 * s;
+            let armJointY = -38 * s;
+            
+            // 寬度變數皆套用 wS
+            let legL = `M0 ${bodyB} L${(-6-walk) * wS} 0`;
+            let legR = `M0 ${bodyB} L${(6+walk) * wS} 0`;
+            let armL = `M0 ${armJointY} L${(-10-walk) * wS} ${bodyB+5}`;
+            let armR = `M0 ${armJointY} L${(10+walk) * wS} ${bodyB+5}`;
+            
+            if (state === 'stand') { 
+                legL = `M0 ${bodyB} L${-2 * wS} 0`; legR = `M0 ${bodyB} L${2 * wS} 0`; 
+                armL = `M0 ${armJointY} L${-6 * wS} ${bodyB}`; armR = `M0 ${armJointY} L${6 * wS} ${bodyB}`; 
+            }
+            else if (state === 'hand') { 
+                armL = `M0 ${armJointY} L${(type==='boy'?-12:10) * wS} ${bodyB+2}`; 
+                armR = `M0 ${armJointY} L${(type==='boy'?6:-6) * wS} ${bodyB+2}`; 
+            }
+            else if (state === 'hug' || state === 'kiss') { 
+                armL = `M0 ${armJointY} Q${(type==='boy'?-12:12) * wS} ${bodyB} 0 ${bodyB}`; 
+                armR = `M0 ${armJointY} Q${(type==='boy'?12:-12) * wS} ${bodyB} 0 ${bodyB}`; 
+                legL = `M0 ${bodyB} L${-2 * wS} 0`; legR = `M0 ${bodyB} L${2 * wS} 0`; 
+            }
+            else if (state === 'comb') { 
+                const shake = Math.sin(t*6)*2;
+                armL = `M0 ${armJointY} L${-8 * wS} ${bodyB}`; 
+                armR = `M0 ${armJointY} Q${12 * wS} ${bodyT} ${18 * wS} ${bodyT+shake}`; 
+            }
+            else if (state === 'sit-right') { 
+                bodyB = -18 * s;
+                legL = `M0 ${bodyB} H${10 * wS} V0`; legR = `M0 ${bodyB} H${12 * wS} V0`; 
+                armL = `M0 ${armJointY} L${4 * wS} ${bodyB}`; armR = `M0 ${armJointY} L${-4 * wS} ${bodyB}`; 
+            }
+            else if (state === 'crouch') { 
+                headY = -25 * s; bodyT = -20 * s; bodyB = -8 * s; armJointY = -18 * s;
+                legL = `M0 ${bodyB} Q${-8 * wS} 0 ${-12 * wS} 0`; legR = `M0 ${bodyB} Q${8 * wS} 0 ${12 * wS} 0`; 
+                armL = `M0 ${armJointY} L${-6 * wS} 2`; armR = `M0 ${armJointY} L${6 * wS} 2`; 
+            }
+            
+            let h = `<circle cx="0" cy="${headY}" r="${6.5 * s}" fill="${color}" stroke="none"/><path d="M0 ${bodyT} L0 ${bodyB}" /><path d="${legL}" /><path d="${legR}" /><path d="${armL}" /><path d="${armR}" />`;
+            if (type === 'girl') { 
+                h += `<path d="M0 ${bodyT+6} L${-8 * wS} ${bodyB} H${8 * wS} Z" opacity="0.6" fill="${color}" stroke="none"/>`;
+                h += `<path d="M${-6 * wS} ${headY} Q${-10 * wS} ${headY+12} ${-7 * wS} ${bodyT+12} M${6 * wS} ${headY} Q${10 * wS} ${headY+12} ${7 * wS} ${bodyT+12}" stroke-width="1.2"/>`; 
+            }
+            g.innerHTML = h; g.setAttribute("transform", `translate(${x},${y})`); svg.appendChild(g);
+        }
+
+        window.onload = renderStory;
+    </script>
+</body>
+</html>
