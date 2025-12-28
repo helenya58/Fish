@@ -13,7 +13,6 @@
             --accent-color: #a68d7a;
             --card-bg: rgba(255, 255, 255, 0.98);
             --caption-bg: rgba(0, 0, 0, 0.7);
-            --stage-bg: rgba(245, 240, 230, 0.7); 
         }
         body {
             background-color: var(--bg-color);
@@ -46,7 +45,6 @@
             width: 100%;
             box-shadow: 0 15px 50px rgba(74, 63, 53, 0.06);
         }
-        /* 響應式字體優化 */
         @media (max-width: 640px) {
             .story-text {
                 font-size: 1.15rem !important;
@@ -143,20 +141,26 @@
 </head>
 <body>
 
+    <!-- 開啟遮罩 -->
     <div id="intro-overlay" class="fixed inset-0 z-[5000] flex flex-col items-center justify-center transition-opacity duration-1000 bg-white">
         <h1 class="text-3xl md:text-5xl font-light tracking-[0.5em] mb-6 text-stone-700">致 魚魚</h1>
         <p class="text-xs md:text-sm text-stone-400 tracking-[0.3em] mb-12">一段關於我們與時間的旅程</p>
         <button id="start-btn" onclick="startApp()" class="px-12 py-4 border border-stone-300 rounded-full text-xs tracking-[0.4em] hover:bg-stone-50 transition-all duration-300 shadow-sm">開啟回憶</button>
     </div>
 
+    <!-- YouTube 播放器 -->
     <div id="player" class="hidden"></div>
+    
+    <!-- 內容區域 -->
     <div class="story-container" id="content-area"></div>
     
+    <!-- 底部動畫舞台 -->
     <div class="footer-stage">
         <svg id="canvas" viewBox="0 0 1000 100" preserveAspectRatio="none"></svg>
         <div id="heart-container" style="position:absolute; inset:0;"></div>
     </div>
 
+    <!-- 結局遮罩 -->
     <div id="final-overlay"><div id="final-text"></div></div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
@@ -224,7 +228,7 @@
                     {url: "https://i.postimg.cc/nMwKjgNn/31.jpg", note: "好克難坐在高鐵地板上的我～"},
                     {url: "https://i.postimg.cc/JGDNbKWs/32.jpg", note: "魚也很克難的坐地板"}
                 ],
-                text: "時間不知不覺就到了2025新年，雖然是撿漏的，但我還是難掩跟你還有叔叔阿姨一同出遊的興奮，雖然我最喜歡的還是跟你單獨相處，但你願意帶我跟身邊的人多熟悉讓我很感動，不過，其實，從那之後我就知道，我們終有現在這一天的，當你叔叔問說，有沒有要結婚，你很大聲、篤定的說“沒有！“雖然你後來有解釋只是一時情急，但我知道，這是你潛意識的想法（至少我之前修心理學的課是這樣講的），所以我其實很早就沒有期待哈哈哈哈，只是偶爾還是會忍不住抱著少女心的幻想。雖說如此，那天我還是過得很開心，開啟了我對釣魚的興趣！本來很想跟你去夜釣小卷或其他魚的，不過世事難料，未來有緣再說～"
+                text: "時間不知不覺就到了2025新年，雖然是撿漏的，但我還是難掩跟你還有叔叔阿姨一同出遊的興奮，雖然我最喜歡的還是跟你單獨相處，但你願意帶我跟身邊的人多熟悉讓我很感動，不過，其實，從那之後我就知道，我們終有現在這一天的，當你叔叔問說，有沒有要結婚，你很大聲、篤定的說“沒有！“雖然你後來有解釋只是一時情急，但我知道，這是你潛意識的想法，所以我其實很早就沒有期待哈哈哈哈。雖說如此，那天我還是過得很開心，開啟了我對釣魚的興趣！未來有緣再說～"
             },
             {
                 tag: 'part6',
@@ -239,7 +243,7 @@
                     {url: "https://i.postimg.cc/hXRdVBr2/40.jpg", note: "也是我愛的照片～我在相框裡～"},
                     {url: "https://i.postimg.cc/BjfK20gk/41.jpg", note: "粉色櫻花 配我粉色眼影 但魚臭臉:("}
                 ],
-                text: "時間回到過年出遊那幾天，我最開心的還有清境農場了，不過理由滿膚淺的，因為我覺得 在那裡拍的照片我們兩個都很好看哈哈哈～"
+                text: "時間回到過年出遊那幾天，我最開心的還有清境農場了，在那裡拍的照片我們兩個都很好看哈哈哈～"
             },
             {
                 tag: 'part7',
@@ -274,10 +278,6 @@
                 text: "總之 我就以我喜歡的、對我來說很有意義的照片來做結尾吧！"
             },
             {
-                tag: 'fade',
-                text: "最後，我想跟你說，你曾是我的全世界，謝謝你出現在我的生命中，教會了我什麼是愛。"
-            },
-            {
                 tag: 'part10',
                 photos: [
                     {url: "https://i.postimg.cc/JycsW6f8/63.jpg", note: "山中仙境～"},
@@ -293,6 +293,10 @@
                     {url: "https://i.postimg.cc/jWp2Y61q/73.jpg", note: "最後一次一起租車的合照"}
                 ],
                 text: "最後，謝謝你最後給我一星期的溫柔。太平山之旅雖然有遺憾，但這份不完美，可能就是留著給下一個人圓滿的吧。"
+            },
+            {
+                tag: 'fade',
+                text: "最後，我想跟你說，你曾是我的全世界，謝謝你出現在我的生命中，教會了我什麼是愛。"
             }
         ];
 
@@ -403,7 +407,7 @@
                 if(s.getBoundingClientRect().top < window.innerHeight*0.85) s.classList.add('active');
             });
             const final = document.getElementById('final-overlay');
-            if(p > 0.992) { final.style.opacity = 1; final.style.pointerEvents = 'auto'; }
+            if(p > 0.995) { final.style.opacity = 1; final.style.pointerEvents = 'auto'; }
             else { final.style.opacity = 0; final.style.pointerEvents = 'none'; }
             drawAnimation(p);
             requestAnimationFrame(loop);
